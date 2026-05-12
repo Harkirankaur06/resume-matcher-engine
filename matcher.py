@@ -52,6 +52,8 @@ def build_vocabulary(normalized_resumes):
         for skill in skills:
             vocabulary_set.add(skill)
     vocabulary = sorted(list(vocabulary_set))
+    if not vocabulary:
+        print("Warning: Vocabulary is empty.")
     return vocabulary
 
 def compute_idf(normalized_resumes, vocabulary):
@@ -78,7 +80,7 @@ def compute_tfidf_vectors(normalized_resumes, vocabulary, idf_scores):
     tfidf_vectors = {}
     for resume_id, resume_data in normalized_resumes.items():
         skills = resume_data["Skills"]
-        total_skills = len(skills)
+        total_skills = max(len(skills), 1)
         vector = []
         for skill in vocabulary:
             # Skill exists in resume
