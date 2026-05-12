@@ -39,7 +39,7 @@ def main():
         jd_vectors
     )
     # Final Output
-    print("\n=== FINAL MATCHING RESULTS ===\n")
+    print("\nFINAL MATCHING RESULTS\n")
     for jd_id, candidates in rankings.items():
         jd_info = JOB_DESCRIPTIONS[jd_id]
         print(
