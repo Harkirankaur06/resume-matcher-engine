@@ -9,17 +9,14 @@ def normalize_skills(raw_skills_string, skill_aliases):
     """
     # 1. Split the raw string by commas
     raw_tokens = raw_skills_string.split(',')
-
     # 2. Convert all tokens to lowercase and strip whitespace
     clean_tokens = [token.strip().lower() for token in raw_tokens]
     normalized_skills = []
-
     # 3. Iterate over the tokens to apply aliases and discard unknowns
     for token in clean_tokens:
         # Since we already split by commas, "machine learning" is naturally treated as one phrase
         if token in skill_aliases:
             normalized_skills.append(skill_aliases[token])
-
     # 4. Deduplicate the final list (set removes duplicates)
     deduplicated_skills = list(dict.fromkeys(normalized_skills))
     return deduplicated_skills
