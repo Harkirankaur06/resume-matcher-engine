@@ -27,14 +27,6 @@ def normalize_skills(raw_skills_string, skill_aliases):
 def normalize_all_resumes():
     """
     Normalize skills for all resumes.
-    Returns:
-    dict:
-        {
-            "01": {
-                "Candidate": "Arjun Sharma",
-                "Skills": ["python", "sql", ...]
-            }
-        }
     """
     normalized_resumes = {}
     for resume_id, resume_data in RESUMES.items():
@@ -53,9 +45,6 @@ def normalize_all_resumes():
 def build_vocabulary(normalized_resumes):
     """
     Build shared vocabulary from all normalized resumes.
-    Returns:
-    list:
-        Sorted unique skills
     """
     vocabulary_set = set()
     for resume_data in normalized_resumes.values():
@@ -64,6 +53,43 @@ def build_vocabulary(normalized_resumes):
             vocabulary_set.add(skill)
     vocabulary = sorted(list(vocabulary_set))
     return vocabulary
+
+def compute_idf(normalized_resumes, vocabulary):
+    """
+    Compute IDF for every skill in vocabulary.
+    """
+    total_resumes = len(normalized_resumes)
+    idf_scores = {}
+    for skill in vocabulary:
+        document_frequency = 0
+        # Count resumes containing the skill
+        for resume_data in normalized_resumes.values():
+            if skill in resume_data["Skills"]:
+                document_frequency += 1
+        # IDF formula
+        idf = math.log(total_resumes / document_frequency)
+        idf_scores[skill] = idf
+    return idf_scores
+
+def compute_tfidf_vectors(normalized_resumes, vocabulary, idf_scores):
+    """
+    Compute TF-IDF vector for each resume.
+    """
+    tfidf_vectors = {}
+    for resume_id, resume_data in normalized_resumes.items():
+        skills = resume_data["Skills"]
+        total_skills = len(skills)
+        vector = []
+        for skill in vocabulary:
+            # Skill exists in resume
+            if skill in skills:
+                tf = 1 / total_skills
+                tfidf = tf * idf_scores[skill]
+                vector.append(tfidf)
+            else:
+                vector.append(0.0)
+        tfidf_vectors[resume_id] = vector
+    return tfidf_vectors
 
 # --- Test Block ---
 if __name__ == "__main__":
@@ -85,3 +111,23 @@ if __name__ == "__main__":
     vocabulary = build_vocabulary(normalized_resumes)
     print("\n--- VOCABULARY ---\n")
     print(vocabulary)
+    # Compute IDF scores
+    idf_scores = compute_idf(
+        normalized_resumes,
+        vocabulary
+    )
+    print("\n--- IDF SCORES ---\n")
+
+    for skill, score in idf_scores.items():
+        print(f"{skill}: {round(score, 4)}")
+    # Compute TF-IDF vectors
+    tfidf_vectors = compute_tfidf_vectors(
+        normalized_resumes,
+        vocabulary,
+        idf_scores
+    )
+    print("\n--- TF-IDF VECTORS ---\n")
+    for resume_id, vector in tfidf_vectors.items():
+        print(f"{resume_id}:")
+        print(vector)
+        print()
