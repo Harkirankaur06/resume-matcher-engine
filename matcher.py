@@ -91,6 +91,82 @@ def compute_tfidf_vectors(normalized_resumes, vocabulary, idf_scores):
         tfidf_vectors[resume_id] = vector
     return tfidf_vectors
 
+def build_jd_vectors(vocabulary):
+    """
+    Build binary vectors for all job descriptions.
+    """
+    jd_vectors = {}
+    for jd_id, jd_data in JOB_DESCRIPTIONS.items():
+        # Combine required + preferred skills
+        all_skills = (
+            jd_data["Required Skills"]
+            + ", " +
+            jd_data["Preferred Skills"]
+        )
+        # Normalize skills
+        normalized_skills = normalize_skills(
+            all_skills,
+            SKILL_ALIASES
+        )
+        # Build binary vector
+        vector = []
+        for skill in vocabulary:
+            if skill in normalized_skills:
+                vector.append(1)
+            else:
+                vector.append(0)
+        jd_vectors[jd_id] = vector
+    return jd_vectors
+
+def cosine_similarity(vector_a, vector_b):
+    """
+    Compute cosine similarity between two vectors.
+    """
+    dot_product = 0
+    for a, b in zip(vector_a, vector_b):
+        dot_product += a * b
+    magnitude_a = math.sqrt(
+        sum(value ** 2 for value in vector_a)
+    )
+    magnitude_b = math.sqrt(
+        sum(value ** 2 for value in vector_b)
+    )
+    # Prevent division by zero
+    if magnitude_a == 0 or magnitude_b == 0:
+        return 0
+    similarity = dot_product / (
+        magnitude_a * magnitude_b
+    )
+    return similarity
+
+def rank_candidates(normalized_resumes, tfidf_vectors, jd_vectors):
+    """
+    Rank candidates for each JD.
+    """
+    all_rankings = {}
+    for jd_id, jd_vector in jd_vectors.items():
+        rankings = []
+        for resume_id, resume_vector in tfidf_vectors.items():
+            score = cosine_similarity(
+                resume_vector,
+                jd_vector
+            )
+            candidate_name = normalized_resumes[
+                resume_id
+            ]["Candidate"]
+            rankings.append(
+                (candidate_name, round(score, 2))
+            )
+        # Sort:
+        # 1. Higher score first
+        # 2. Alphabetical name for ties
+        rankings.sort(
+            key=lambda x: (-x[1], x[0])
+        )
+        # Keep top 3
+        all_rankings[jd_id] = rankings[:3]
+    return all_rankings
+
 # --- Test Block ---
 if __name__ == "__main__":
     print("Testing Normalization on Candidate 01...\n")
@@ -130,4 +206,30 @@ if __name__ == "__main__":
     for resume_id, vector in tfidf_vectors.items():
         print(f"{resume_id}:")
         print(vector)
+        print()
+    # Build JD vectors
+    jd_vectors = build_jd_vectors(vocabulary)
+    print("\n--- JD VECTORS ---\n")
+    for jd_id, vector in jd_vectors.items():
+        print(f"{jd_id}:")
+        print(vector)
+        print()
+    # Rank candidates
+    rankings = rank_candidates(
+        normalized_resumes,
+        tfidf_vectors,
+        jd_vectors
+    )
+    print("\n--- FINAL RANKINGS ---\n")
+    for jd_id, top_candidates in rankings.items():
+        jd_info = JOB_DESCRIPTIONS[jd_id]
+        print(
+            f"{jd_id} — "
+            f"{jd_info['Company']} "
+            f"({jd_info['Role']})"
+        )
+        result = []
+        for name, score in top_candidates:
+            result.append(f"{name} ({score})")
+        print(", ".join(result))
         print()
