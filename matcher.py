@@ -230,6 +230,6 @@ if __name__ == "__main__":
         )
         result = []
         for name, score in top_candidates:
-            result.append(f"{name} ({score})")
+            result.append(f"{name} ({score:.2f})")
         print(", ".join(result))
         print()
